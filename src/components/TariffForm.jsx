@@ -1,116 +1,89 @@
-import React, { useState } from 'react';
-import { objectiveService } from '../api';
+import { useForm } from "react-hook-form"
+import { useNavigate } from "react-router-dom"
+import { tariffService } from "@/api"
+import { toast } from 'react-toastify'
 
-const ObjectiveForm = ({ onSuccess }) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    startDate: '',
-    endDate: '',
-    state: false,
-    priority: '',
-    observations: '',
-  });
-
-  const [error, setError] = useState('');
-
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    try {
-      await objectiveService.create(formData);
-      onSuccess?.();
-    } catch (err) {
-      setError(err.message || 'Error al guardar el objetivo');
+export default function TariffForm() {
+  const navigate = useNavigate()
+  
+  const { register, handleSubmit, formState: { errors } } = useForm({
+    defaultValues: {
+      name: "",
+      cost: 0.50,
+      timeUnit: "HORA",
+      currency: "USD"
     }
-  };
+  })
+
+  const handleCreateTariff = async (formData) => {
+    try {
+      const payload = {
+        ...formData,
+        cost: parseFloat(formData.cost),
+        state: true
+      }
+      await tariffService.create(payload)
+      toast.success("Tarifa creada correctamente")
+      navigate("/tariffs") // O volver a dashboard
+    } catch (error) {
+      toast.error(error.message)
+    }
+  }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <h2 className="text-xl font-bold text-center text-gray-800">Nuevo Objetivo</h2>
-
-      <input
-        name="name"
-        value={formData.name}
-        onChange={handleChange}
-        required
-        placeholder="Nombre"
-        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
-
-      <textarea
-        name="description"
-        value={formData.description}
-        onChange={handleChange}
-        required
-        placeholder="Descripción"
-        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
-
-      <input
-        type="date"
-        name="startDate"
-        value={formData.startDate}
-        onChange={handleChange}
-        required
-        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
-
-      <input
-        type="date"
-        name="endDate"
-        value={formData.endDate}
-        onChange={handleChange}
-        required
-        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
-
-      <input
-        name="priority"
-        value={formData.priority}
-        onChange={handleChange}
-        required
-        placeholder="Prioridad"
-        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
-
-      <textarea
-        name="observations"
-        value={formData.observations}
-        onChange={handleChange}
-        placeholder="Observaciones"
-        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
-
-      <label className="flex items-center space-x-2">
+    <form
+      onSubmit={handleSubmit(handleCreateTariff)}
+      className="space-y-5"
+      noValidate
+    >
+      <div className="flex flex-col gap-2">
+        <label className="font-normal text-2xl" htmlFor="name">Nombre de la Tarifa</label>
         <input
-          type="checkbox"
-          name="state"
-          checked={formData.state}
-          onChange={handleChange}
-          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+          id="name"
+          type="text"
+          placeholder="Ej: Tarifa Plana Estudiantes"
+          className="w-full p-3 border-gray-300 border rounded-lg"
+          {...register("name", { required: "El nombre es obligatorio" })}
         />
-        <span className="text-gray-700">¿Activo?</span>
-      </label>
+        {errors.name && <p className="text-red-500">{errors.name.message}</p>}
+      </div>
 
-      {error && <p className="text-red-500 text-sm">{error}</p>}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="flex flex-col gap-2">
+            <label className="font-normal text-2xl" htmlFor="cost">Costo</label>
+            <input
+            id="cost"
+            type="number"
+            step="0.01"
+            className="w-full p-3 border-gray-300 border rounded-lg"
+            {...register("cost", { 
+                required: "El costo es obligatorio",
+                min: 0 
+            })}
+            />
+            {errors.cost && <p className="text-red-500">{errors.cost.message}</p>}
+        </div>
 
-      <button
+        <div className="flex flex-col gap-2">
+            <label className="font-normal text-2xl" htmlFor="timeUnit">Por unidad de:</label>
+            <select
+            id="timeUnit"
+            className="w-full p-3 border-gray-300 border rounded-lg bg-white"
+            {...register("timeUnit")}
+            >
+            <option value="HORA">Hora</option>
+            <option value="MINUTO">Minuto</option>
+            <option value="DIA">Día</option>
+            <option value="MES">Mes</option>
+            </select>
+        </div>
+      </div>
+
+      <input
         type="submit"
-        className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition"
-      >
-        Guardar Objetivo
-      </button>
+        value='Guardar Tarifa'
+        className="bg-purple-600 hover:bg-purple-700 w-full p-3 text-white uppercase font-bold cursor-pointer transition-colors rounded-lg"
+      />
     </form>
-  );
-};
-
-export default ObjectiveForm;
+  )
+}
