@@ -2,6 +2,7 @@ import { useForm } from "react-hook-form"
 import { useNavigate } from "react-router-dom"
 import { zoneService } from "@/api" // Usamos el nuevo servicio
 import { toast } from 'react-toastify'
+import ErrorMessage from "./ErrorMessage";
 
 export default function ZoneForm() {
   const navigate = useNavigate()
@@ -51,7 +52,7 @@ export default function ZoneForm() {
             required: "El nombre de la zona es obligatorio",
           })}
         />
-        {errors.name && <p className="text-red-500">{errors.name.message}</p>}
+        {errors.name && <ErrorMessage>{errors.name.message}</ErrorMessage>}</p>}
       </div>
 
       {/* Tipo de Zona */}
