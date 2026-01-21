@@ -1,193 +1,188 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
-
-const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import { useForm } from "react-hook-form"
+import { Link, useNavigate } from "react-router-dom"
+import { authService } from "@/api" // Importamos el servicio actualizado
+import { toast } from 'react-toastify'
+import { useState } from "react"
 
 export default function RegisterForm() {
-  const [roleName, setRoleName] = useState("");
-  const [roleElementId, setRoleElementId] = useState(null);
-
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    identification: "",
-    email: "",
-    phone: "",
-    password: "", // Solo uso local
-  });
-
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-
-  const handleRoleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
-
-    try {
-      const res = await fetch(`${BASE_URL}/roleService`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roleName }),
-      });
-
-      if (!res.ok) throw new Error("Error al registrar el rol");
-
-      const resText = await res.text();
-      const idMatch = resText.match(/ID:\s*(.+)/);
-      const id = idMatch?.[1]?.trim();
-
-      if (!id) throw new Error("No se pudo obtener el ID del rol");
-
-      setRoleElementId(id);
-      setSuccess("Rol registrado con éxito");
-    } catch (err) {
-      setError(err.message || "Error desconocido");
+  const navigate = useNavigate()
+  const [loading, setLoading] = useState(false)
+  
+  const { register, handleSubmit, formState: { errors }, watch } = useForm({
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      identification: "",
+      email: "",
+      phone: "",
+      username: "",
+      password: "",
+      confirmPassword: ""
     }
-  };
+  })
 
-  const handleChange = (e) => {
-    setFormData((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
-  };
+  const password = watch("password");
 
-  const handleRegisterSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
-
+  const handleRegister = async (formData) => {
+    setLoading(true);
     try {
-      const person = {
+      // Preparamos el objeto tal cual lo espera Java (SignUp.java)
+      const payload = {
         firstName: formData.firstName,
         lastName: formData.lastName,
         identification: formData.identification,
         email: formData.email,
         phone: formData.phone,
-      };
-
-      const res = await fetch(`${BASE_URL}/personService`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(person),
-      });
-
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.message || "Error al registrar persona");
+        username: formData.username, // El usuario para el login
+        password: formData.password
       }
 
-      setSuccess("Persona registrada exitosamente");
-      setFormData({
-        firstName: "",
-        lastName: "",
-        identification: "",
-        email: "",
-        phone: "",
-        password: "",
-      });
-    } catch (err) {
-      setError(err.message || "Ocurrió un error");
+      await authService.register(payload)
+      
+      toast.success("Cuenta creada exitosamente. Por favor inicia sesión.")
+      navigate("/auth/login") // Redirigir al login
+      
+    } catch (error) {
+      console.error(error)
+      toast.error(error.message || "Error al registrar la cuenta")
+    } finally {
+      setLoading(false)
     }
-  };
+  }
 
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="bg-white p-8 rounded-2xl shadow-md w-full max-w-md space-y-6">
-        <h2 className="text-xl font-semibold text-gray-800 text-center">Registrar Rol</h2>
-        <form onSubmit={handleRoleSubmit} className="space-y-4">
-          <input
-            type="text"
-            name="roleName"
-            value={roleName}
-            onChange={(e) => setRoleName(e.target.value)}
-            required
-            placeholder="Nombre del Rol"
-            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-          <button
-            type="submit"
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition"
-          >
-            Registrar Rol
-          </button>
-        </form>
-
-        <h2 className="text-xl font-semibold text-gray-800 text-center">Registrar Persona</h2>
-        <form onSubmit={handleRegisterSubmit} className="space-y-4">
-          <input
-            type="text"
-            name="firstName"
-            value={formData.firstName}
-            onChange={handleChange}
-            required
-            placeholder="Nombre"
-            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <input
-            type="text"
-            name="lastName"
-            value={formData.lastName}
-            onChange={handleChange}
-            required
-            placeholder="Apellido"
-            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <input
-            type="text"
-            name="identification"
-            value={formData.identification}
-            onChange={handleChange}
-            required
-            placeholder="Identificación"
-            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            placeholder="Correo electrónico"
-            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <input
-            type="tel"
-            name="phone"
-            value={formData.phone}
-            onChange={handleChange}
-            required
-            placeholder="Teléfono"
-            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <input
-            type="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-            placeholder="Contraseña"
-            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
-          />
-          <button
-            type="submit"
-            className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition"
-          >
-            Registrar Persona
-          </button>
-        </form>
-
-        {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-        {success && <p className="text-green-500 text-sm text-center">{success}</p>}
-
-        <div className="text-sm text-center">
-          ¿Ya tienes cuenta?{" "}
-          <Link to="/" className="text-blue-600 hover:underline">
-            Inicia sesión
-          </Link>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 py-10 px-4">
+      <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-lg border border-gray-200">
+        
+        <div className="text-center mb-8">
+            <h1 className="text-3xl font-black text-purple-600">Crear Cuenta</h1>
+            <p className="text-gray-500 mt-2">Únete al Sistema de Parking Inteligente</p>
         </div>
+
+        <form onSubmit={handleSubmit(handleRegister)} className="space-y-4" noValidate>
+          
+          {/* Nombre y Apellido */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Nombre</label>
+                <input
+                type="text"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                placeholder="Juan"
+                {...register("firstName", { required: "El nombre es obligatorio" })}
+                />
+                {errors.firstName && <p className="text-red-500 text-xs mt-1">{errors.firstName.message}</p>}
+            </div>
+            <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Apellido</label>
+                <input
+                type="text"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                placeholder="Pérez"
+                {...register("lastName", { required: "El apellido es obligatorio" })}
+                />
+                {errors.lastName && <p className="text-red-500 text-xs mt-1">{errors.lastName.message}</p>}
+            </div>
+          </div>
+
+          {/* Identificación y Teléfono */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Cédula / ID</label>
+                <input
+                type="text"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                placeholder="171..."
+                {...register("identification", { required: "La cédula es obligatoria" })}
+                />
+                {errors.identification && <p className="text-red-500 text-xs mt-1">{errors.identification.message}</p>}
+            </div>
+            <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Teléfono</label>
+                <input
+                type="tel"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                placeholder="099..."
+                {...register("phone", { required: "El teléfono es obligatorio" })}
+                />
+                {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>}
+            </div>
+          </div>
+
+          {/* Email */}
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1">Correo Electrónico</label>
+            <input
+              type="email"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              placeholder="juan@ejemplo.com"
+              {...register("email", { 
+                required: "El email es obligatorio",
+                pattern: {
+                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                  message: "Email inválido"
+                }
+              })}
+            />
+            {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
+          </div>
+
+          {/* Username */}
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1">Nombre de Usuario</label>
+            <input
+              type="text"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              placeholder="juanperez123"
+              {...register("username", { required: "El usuario es obligatorio" })}
+            />
+            {errors.username && <p className="text-red-500 text-xs mt-1">{errors.username.message}</p>}
+          </div>
+
+          {/* Password */}
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1">Contraseña</label>
+            <input
+              type="password"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              placeholder="********"
+              {...register("password", { 
+                required: "La contraseña es obligatoria",
+                minLength: { value: 6, message: "Mínimo 6 caracteres" }
+              })}
+            />
+            {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
+          </div>
+
+          {/* Confirmar Password */}
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1">Repetir Contraseña</label>
+            <input
+              type="password"
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              placeholder="********"
+              {...register("confirmPassword", { 
+                required: "Repite tu contraseña",
+                validate: value => value === password || "Las contraseñas no coinciden"
+              })}
+            />
+            {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword.message}</p>}
+          </div>
+
+          <input
+            type="submit"
+            value={loading ? "Registrando..." : "Crear Cuenta"}
+            disabled={loading}
+            className={`w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-lg cursor-pointer transition-colors mt-4 uppercase ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+          />
+        </form>
+
+        <nav className="mt-8 text-center">
+            <Link to="/auth/login" className="text-gray-500 hover:text-purple-600 transition-colors text-sm">
+                ¿Ya tienes una cuenta? <span className="font-bold">Inicia Sesión</span>
+            </Link>
+        </nav>
       </div>
     </div>
-  );
+  )
 }
