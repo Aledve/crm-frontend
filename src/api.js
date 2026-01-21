@@ -40,6 +40,17 @@ export const authService = {
 
     return await handleResponse(response);
   },
+  register: async (signUpData) => {
+    const response = await fetch(`${BASE_URL}/authService/signUp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(signUpData),
+    });
+
+    return await handleResponse(response);
+  },
 };
 
 export const personService = {
