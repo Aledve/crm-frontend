@@ -1,5 +1,6 @@
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+// Función auxiliar para manejar respuestas y errores uniformemente
 const handleResponse = async (response) => {
   if (!response.ok) {
     let errorMessage = 'Error en la solicitud';
@@ -25,6 +26,8 @@ const handleResponse = async (response) => {
   return null;
 };
 
+// --- SERVICIOS DE IDENTIDAD (CORE) ---
+
 export const authService = {
   login: async ({ username, password }) => {
     const response = await fetch(`${BASE_URL}/authService/login`, {
@@ -40,7 +43,7 @@ export const authService = {
 };
 
 export const personService = {
-   getAll: async () => {
+  getAll: async () => {
     const response = await fetch(`${BASE_URL}/personService`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
@@ -64,19 +67,82 @@ export const personService = {
   },
 };
 
-export const projectService = {
-  create: async (projectData) => {
-    const response = await fetch(`${BASE_URL}/projectService`, {
+// --- SERVICIOS DE PARKING (NEGOCIO) ---
+
+export const zoneService = { // Antes projectService
+  create: async (zoneData) => {
+    const response = await fetch(`${BASE_URL}/zoneService`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(projectData),
+      body: JSON.stringify(zoneData),
     });
 
     return await handleResponse(response);
   },
 
   getAll: async () => {
-    const response = await fetch(`${BASE_URL}/projectService`, {
+    const response = await fetch(`${BASE_URL}/zoneService`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    return await handleResponse(response);
+  },
+
+  // Endpoint útil para el Dashboard (lugares libres)
+  getAvailable: async () => {
+    const response = await fetch(`${BASE_URL}/zoneService/available`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    return await handleResponse(response);
+  }
+};
+
+export const vehicleService = { // Antes teamService
+  create: async (vehicleData) => {
+    const response = await fetch(`${BASE_URL}/vehicleService`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(vehicleData),
+    });
+
+    return await handleResponse(response);
+  },
+
+  getAll: async () => {
+    const response = await fetch(`${BASE_URL}/vehicleService`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(vehicleData), // Nota: GET usualmente no lleva body, verifica si tu backend lo ignora.
+    });
+
+    return await handleResponse(response);
+  },
+  
+  // Corregí el getAll anterior, fetch GET no debería llevar body.
+  getAllCorrected: async () => { 
+      const response = await fetch(`${BASE_URL}/vehicleService`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    return await handleResponse(response);
+  }
+};
+
+export const reservationService = { // Antes taskService
+  create: async (reservationData) => {
+    const response = await fetch(`${BASE_URL}/reservationService`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(reservationData),
+    });
+
+    return await handleResponse(response);
+  },
+
+  getAll: async () => {
+    const response = await fetch(`${BASE_URL}/reservationService`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -85,19 +151,19 @@ export const projectService = {
   },
 };
 
-export const teamService = {
-  create: async (teamData) => {
-    const response = await fetch(`${BASE_URL}/teamService`, {
+export const tariffService = { // Antes objectiveService
+  create: async (tariffData) => {
+    const response = await fetch(`${BASE_URL}/tariffService`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(teamData),
+      body: JSON.stringify(tariffData),
     });
 
     return await handleResponse(response);
   },
 
   getAll: async () => {
-    const response = await fetch(`${BASE_URL}/teamService`, {
+    const response = await fetch(`${BASE_URL}/tariffService`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -106,45 +172,23 @@ export const teamService = {
   },
 };
 
-export const taskService = {
-  create: async (taskData) => {
-    const response = await fetch(`${BASE_URL}/taskService`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(taskData),
-    });
-
-    return await handleResponse(response);
-  },
-
+// Nuevo Servicio: MONITOREO
+export const sensorService = {
   getAll: async () => {
-    const response = await fetch(`${BASE_URL}/taskService`, {
+    const response = await fetch(`${BASE_URL}/sensorService`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
     });
 
     return await handleResponse(response);
   },
-};
-
-
-export const objectiveService = {
-  create: async (objectiveData) => {
-    const response = await fetch(`${BASE_URL}/objectiveService`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(objectiveData),
-    });
-
-    return await handleResponse(response);
-  },
-
-  getAll: async () => {
-    const response = await fetch(`${BASE_URL}/objectiveService`, {
-      method: 'GET',
+  
+  // Útil si quieres cambiar el estado manualmente desde el admin panel
+  updateStatus: async (id, status) => {
+      const response = await fetch(`${BASE_URL}/sensorService/${id}/status?status=${status}`, {
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
     });
-
     return await handleResponse(response);
-  },
+  }
 };
