@@ -1,85 +1,121 @@
-import React, { useState } from 'react';
+import { useForm } from "react-hook-form"
+import { useNavigate } from "react-router-dom"
+import { vehicleService } from "@/api"
+import { toast } from 'react-toastify'
 
-const TeamForm = ({ onSuccess }) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    startDate: '',
-    endDate: '',
-    state: false,
-  });
-
-  const [error, setError] = useState('');
-
-  const handleChange = (e) => {
-    const { name, type, value, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    try {
-      await teamService.create(formData);
-      onSuccess?.();
-    } catch (err) {
-      setError(err.message || 'Error al guardar el equipo');
+export default function VehicleForm() {
+  const navigate = useNavigate()
+  
+  const { register, handleSubmit, formState: { errors } } = useForm({
+    defaultValues: {
+      plate: "",
+      brand: "",
+      model: "",
+      color: "",
+      type: "AUTOMOVIL"
     }
-  };
+  })
+
+  const handleRegisterVehicle = async (formData) => {
+    try {
+      const payload = {
+        ...formData,
+        state: true // Activo por defecto
+      }
+      await vehicleService.create(payload)
+      toast.success("Vehículo registrado exitosamente")
+      navigate("/") // O redirigir a la lista de vehículos
+    } catch (error) {
+      toast.error(error.message)
+    }
+  }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-      <input
-        type="text"
-        name="name"
-        required
-        placeholder="Nombre del equipo"
-        value={formData.name}
-        onChange={handleChange}
-        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
-
-      <input
-        type="date"
-        name="startDate"
-        required
-        value={formData.startDate}
-        onChange={handleChange}
-        className="w-full px-4 py-2 border rounded-lg"
-      />
-
-      <input
-        type="date"
-        name="endDate"
-        required
-        value={formData.endDate}
-        onChange={handleChange}
-        className="w-full px-4 py-2 border rounded-lg"
-      />
-
-      <label className="flex items-center space-x-2">
+    <form
+      onSubmit={handleSubmit(handleRegisterVehicle)}
+      className="space-y-5"
+      noValidate
+    >
+      {/* Placa */}
+      <div className="flex flex-col gap-2">
+        <label className="font-normal text-2xl" htmlFor="plate">Placa</label>
         <input
-          type="checkbox"
-          name="state"
-          checked={formData.state}
-          onChange={handleChange}
-          className="form-checkbox h-5 w-5 text-blue-600"
+          id="plate"
+          type="text"
+          placeholder="Ej: PAB-1234"
+          className="w-full p-3 border-gray-300 border rounded-lg uppercase"
+          {...register("plate", {
+            required: "La placa es obligatoria",
+            pattern: {
+                // Regex básico para placas (ajusta a tu país si es necesario)
+                value: /^[A-Z0-9-]+$/i,
+                message: "Formato de placa inválido"
+            }
+          })}
         />
-        <span className="text-gray-700">Estado activo</span>
-      </label>
+        {errors.plate && <p className="text-red-500">{errors.plate.message}</p>}
+      </div>
 
-      {error && <p className="text-red-500 text-sm">{error}</p>}
+      {/* Marca y Modelo (Grid de 2 columnas) */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="flex flex-col gap-2">
+            <label className="font-normal text-2xl" htmlFor="brand">Marca</label>
+            <input
+            id="brand"
+            type="text"
+            placeholder="Ej: Toyota"
+            className="w-full p-3 border-gray-300 border rounded-lg"
+            {...register("brand", { required: "La marca es obligatoria" })}
+            />
+            {errors.brand && <p className="text-red-500">{errors.brand.message}</p>}
+        </div>
 
-      <button
+        <div className="flex flex-col gap-2">
+            <label className="font-normal text-2xl" htmlFor="model">Modelo</label>
+            <input
+            id="model"
+            type="text"
+            placeholder="Ej: Yaris"
+            className="w-full p-3 border-gray-300 border rounded-lg"
+            {...register("model", { required: "El modelo es obligatorio" })}
+            />
+            {errors.model && <p className="text-red-500">{errors.model.message}</p>}
+        </div>
+      </div>
+
+      {/* Color y Tipo */}
+      <div className="grid grid-cols-2 gap-4">
+          <div className="flex flex-col gap-2">
+            <label className="font-normal text-2xl" htmlFor="color">Color</label>
+            <input
+              id="color"
+              type="text"
+              placeholder="Ej: Rojo"
+              className="w-full p-3 border-gray-300 border rounded-lg"
+              {...register("color", { required: "El color es obligatorio" })}
+            />
+            {errors.color && <p className="text-red-500">{errors.color.message}</p>}
+          </div>
+          
+          <div className="flex flex-col gap-2">
+            <label className="font-normal text-2xl" htmlFor="type">Tipo</label>
+            <select
+              id="type"
+              className="w-full p-3 border-gray-300 border rounded-lg bg-white"
+              {...register("type")}
+            >
+              <option value="AUTOMOVIL">Automóvil</option>
+              <option value="MOTOCICLETA">Motocicleta</option>
+              <option value="CAMIONETA">Camioneta</option>
+            </select>
+          </div>
+      </div>
+
+      <input
         type="submit"
-        className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition"
-      >
-        Guardar Equipo
-      </button>
+        value='Registrar Vehículo'
+        className="bg-purple-600 hover:bg-purple-700 w-full p-3 text-white uppercase font-bold cursor-pointer transition-colors rounded-lg"
+      />
     </form>
-  );
-};
-
-export default TeamForm;
+  )
+}
